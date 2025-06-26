@@ -1,15 +1,19 @@
-import React from "react";
+import Box from "@mui/material/Box";
 
 function BoardContent() {
   return (
     <Box
-      sx={{
-        backgroundColor: "primary.main",
-        width: "100%",
-        height: (theme) =>
-          `calc(100vh - ${theme.trello.appBarHeight} - ${theme.trello.boardBarHeight})`,
-        display: "flex",
-        alignItems: "center",
+      sx={(theme) => {
+        console.log(theme); // 👈 kiểm tra xem có theme.trello không
+        return {
+          height: `calc(100vh - ${theme.trello?.appBarHeight ?? "64px"} - ${
+            theme.trello?.boardBarHeight ?? "52px"
+          })`,
+          backgroundColor: "primary.main",
+          display: "flex",
+          alignItems: "center",
+          width: "100%",
+        };
       }}
     >
       Board Content
