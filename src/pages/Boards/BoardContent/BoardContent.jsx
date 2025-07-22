@@ -3,14 +3,24 @@ import ListColumns from "./ListColumns/ListColumns";
 import { mapOrder } from "~/utils/sorts";
 import {
   DndContext,
-  PointerSensor,
+  // PointerSensor,
   MouseSensor,
   TouchSensor,
   useSensor,
   useSensors,
+  DragOverlay,
+  defaultDropAnimationSideEffects,
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { useEffect, useState } from "react";
+
+import Column from "./ListColumns/Column/Column";
+import Card from "./ListColumns/Column/ListCards/Card/Card";
+
+const ACTIVE_DRAG_ITEM_TYPE = {
+  COLUMN: "ACTIVE_DRAG_ITEM_TYPE_COLUMN",
+  CARD: "ACTIVE_DRAG_ITEM_TYPE_CARD",
+};
 
 function BoardContent({ board }) {
   // nếu dùng pointerSensor mặc định thì phải kết hợp thuộc tính CSS touch-action: none ở nhưng phần tử kéo thả - nhưng mà còn bug
@@ -18,12 +28,12 @@ function BoardContent({ board }) {
   //   activationConstraint: { distance: 10 },
   // });
 
-  const mouseSensor = useSensor(PointerSensor, {
+  const mouseSensor = useSensor(MouseSensor, {
     // yêu cầu chuột di chuyển 10px mới kích hoạt event, fix trường hợp click bị gọi event
     activationConstraint: { distance: 10 },
   });
 
-  const touchSensor = useSensor(PointerSensor, {
+  const touchSensor = useSensor(TouchSensor, {
     // nhấn giữ 250ms và dung sai của cảm ứng 500px thì mới kích hoạt event
     delay: 250,
     tolerance: 500,
@@ -35,10 +45,28 @@ function BoardContent({ board }) {
 
   const [orderedColumns, setOrderedColumns] = useState([]);
 
+  // cùng một thời điểm chỉ có có một phần tử được kéo (column hoặc card)
+  const [activeDragItemId, setActiveDragItemId] = useState(null);
+  const [activeDragItemType, setActiveDragItemType] = useState(null);
+  const [activeDragItemData, setActiveDragItemData] = useState(null);
+
   useEffect(() => {
     setOrderedColumns(mapOrder(board?.columns, board?.columnOrderIds, "_id"));
   }, [board]);
 
+  // trigger khi bắt đầu kéo (drag) một phần tử
+  const handleDragStart = (event) => {
+    // console.log("handleDragStart: ", event);
+    setActiveDragItemId(event?.active?.id);
+    setActiveDragItemType(
+      event?.active?.data?.current?.columnId
+        ? ACTIVE_DRAG_ITEM_TYPE.CARD
+        : ACTIVE_DRAG_ITEM_TYPE.COLUMN
+    );
+    setActiveDragItemData(event?.active?.data?.current);
+  };
+
+  // trigger khi kết thúc hành động kéo (drag) một phần tử => hành động thả (drop)
   const handleDragEnd = (event) => {
     console.log("handleDragEnd: ", event);
     const { active, over } = event;
@@ -62,9 +90,29 @@ function BoardContent({ board }) {
       // cập nhật lại state column sau khi đã kéo thả
       setOrderedColumns(dndOrderedColumns);
     }
+
+    setActiveDragItemId(null);
+    setActiveDragItemType(null);
+    setActiveDragItemData(null);
   };
+
+  // animation khi thả (drop) phần tử
+  const customDropAnimation = {
+    sideEffects: defaultDropAnimationSideEffects({
+      styles: {
+        active: {
+          opacity: "0.5",
+        },
+      },
+    }),
+  };
+
   return (
-    <DndContext onDragEnd={handleDragEnd} sensors={sensors}>
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
       <Box
         sx={{
           bgcolor: (theme) =>
@@ -75,6 +123,15 @@ function BoardContent({ board }) {
         }}
       >
         <ListColumns columns={orderedColumns} />
+        <DragOverlay dropAnimation={customDropAnimation}>
+          {!activeDragItemType && null}
+          {activeDragItemType === ACTIVE_DRAG_ITEM_TYPE.COLUMN && (
+            <Column column={activeDragItemData} />
+          )}
+          {activeDragItemType === ACTIVE_DRAG_ITEM_TYPE.CARD && (
+            <Card card={activeDragItemData} />
+          )}
+        </DragOverlay>
       </Box>
     </DndContext>
   );
