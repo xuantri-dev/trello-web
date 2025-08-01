@@ -24,6 +24,7 @@ module.exports = {
       "error",
       {
         patterns: [{ regex: "^@mui/[^/]+$" }],
+        // patterns: ["^@mui/[^/]+$"],
       },
     ],
 
