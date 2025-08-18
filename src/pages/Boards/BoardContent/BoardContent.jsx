@@ -11,9 +11,9 @@ import {
   DragOverlay,
   defaultDropAnimationSideEffects,
   closestCorners,
-  closestCenter,
+  // closestCenter,
   pointerWithin,
-  rectIntersection,
+  // rectIntersection,
   getFirstCollision,
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
@@ -342,24 +342,27 @@ function BoardContent({ board }) {
       // tìm các điểm giao nhau, va chạm - intersections với con trỏ
       const pointerIntersection = pointerWithin(args);
 
-      // thuật toán phát hiệm va chạm sẽ trả về một mảng các va chạm ở đây
-      const intersections =
-        !!pointerIntersection?.length > 0
-          ? pointerIntersection
-          : rectIntersection(args);
+      // vid 37.1 nếu pointerIntersections là mảng rỗng, return luôn không làm gì hết
+      // fix triệt để cái bug flickering của thư viện dnd-kit trong trường hợp sau:
+      // kéo một card có image cover lớn và kéo lên phí trên cùng ra khỏi khu vực kéo thả
+      if (!pointerIntersection?.length) return;
 
-      // tìm overId đầu tiên trong đám ỉntersections ở trên
-      let overId = getFirstCollision(intersections, "id");
-      console.log("overId: ", overId);
+      // // thuật toán phát hiệm va chạm sẽ trả về một mảng các va chạm ở đây
+      // const intersections = !!pointerIntersection?.length > 0
+      //     ? pointerIntersection
+      //     : rectIntersection(args);
+
+      // tìm overId đầu tiên trong đám pointerIntersection ở trên
+      let overId = getFirstCollision(pointerIntersection, "id");
       if (overId) {
         // vid 37 fix bug flickering
-        // nếu cái over nó là column thì sẽ tìm tới cái cardId gần nhất bên trong khu vực va chạm đó dựa vào thuật toán phát hiện va chạm closetCenter hoặc closestCorners đều được. Tuy nhiên ở đây dùng closestCenter thấy mượt mà hơn
+        // nếu cái over nó là column thì sẽ tìm tới cái cardId gần nhất bên trong khu vực va chạm đó dựa vào thuật toán phát hiện va chạm closetCenter hoặc closestCorners đều được. Tuy nhiên ở đây dùng closestCorners thấy mượt mà hơn
         const checkColumn = orderedColumns.find(
           (column) => column._id === overId
         );
         if (checkColumn) {
           // console.log("overId before: ", overId);
-          overId = closestCenter({
+          overId = closestCorners({
             ...args,
             droppableContainers: args.droppableContainers.filter(
               (container) => {
