@@ -18,7 +18,8 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { cloneDeep } from "lodash";
+import { cloneDeep, isEmpty } from "lodash";
+import { generatePlaceholderCard } from "~/utils/formatters";
 
 import Column from "./ListColumns/Column/Column";
 import Card from "./ListColumns/Column/ListCards/Card/Card";
@@ -115,9 +116,16 @@ function BoardContent({ board }) {
         nextActiveColumn.cards = nextActiveColumn.cards.filter(
           (card) => card._id !== activeDraggingCardId
         );
+
+        // thêm placeholder card nếu column rỗng : bị kéo hết card đi, không còn cái nào nữa (37.2)
+        if (isEmpty(nextActiveColumn.cards)) {
+          console.log("Card cuối cùng bị kéo đi");
+          nextActiveColumn.cards = [generatePlaceholderCard(nextActiveColumn)];
+        }
+
         // cập nhật lại mảng cardOrderIds cho chuẩn dữ liệu
         nextActiveColumn.cardOrderIds = nextActiveColumn.cards.map(
-          (card) => card.id
+          (card) => card._id
         );
       }
 
@@ -140,11 +148,19 @@ function BoardContent({ board }) {
           0,
           rebuild_activeDraggingCardData
         );
+
+        // xóa cái placeholder card nếu nó đang tồn tại (vid 37.2)
+        nextOverColumn.cards = nextOverColumn.cards.filter(
+          (card) => !card.FE_PlaceholderCard
+        );
+
         // cập nhật lại mảng cardOrderIds cho chuẩn dữ liệu
         nextOverColumn.cardOrderIds = nextOverColumn.cards.map(
           (card) => card._id
         );
       }
+
+      console.log("nextColumns: ", nextColumns);
 
       return nextColumns;
     });
