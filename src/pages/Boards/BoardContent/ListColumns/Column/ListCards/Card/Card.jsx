@@ -44,6 +44,9 @@ function Card({ card }) {
         cursor: "pointer",
         boxShadow: "0 1px 1px rgba(0, 0, 0, 0.2)",
         overflow: "unset",
+        display: card?.FE_PlaceholderCard ? "none" : "block",
+        // overflow: card?.FE_PlaceholderCard ? "hidden" : "unset",
+        // display: card?.FE_PlaceholderCard ? "0px" : "unset",
       }}
     >
       {card?.cover && <CardMedia sx={{ height: 140 }} image={card?.cover} />}
