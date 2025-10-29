@@ -31,7 +31,7 @@ const ACTIVE_DRAG_ITEM_TYPE = {
   CARD: "ACTIVE_DRAG_ITEM_TYPE_CARD",
 };
 
-function BoardContent({ board, createNewColumn, createNewCard }) {
+function BoardContent({ board, createNewColumn, createNewCard, moveColumns }) {
   // nếu dùng pointerSensor mặc định thì phải kết hợp thuộc tính CSS touch-action: none ở nhưng phần tử kéo thả - nhưng mà còn bug
   // const pointerSensor = useSensor(PointerSensor, {
   //   activationConstraint: { distance: 10 },
@@ -302,7 +302,7 @@ function BoardContent({ board, createNewColumn, createNewCard }) {
       }
     }
 
-    // xử lí kéo thả Columns trong một cái boarContent
+    // xử lí kéo thả Columns trong một cái boardContent
     if (activeDragItemType === ACTIVE_DRAG_ITEM_TYPE.COLUMN) {
       // nếu vị trí sau khi kéo thả khác với vị trí ban đầu
       if (active.id !== over.id) {
@@ -321,11 +321,13 @@ function BoardContent({ board, createNewColumn, createNewCard }) {
           oldColumnIndex,
           newColumnIndex
         );
-        // const dndOrderedColumnsIds = dndOrderedColumns.map((c) => c._id);
-        // console.log("dndOrderedColumns: ", dndOrderedColumns);
-        // console.log("dndOrderedColumnsIds: ", dndOrderedColumnsIds);
 
-        // cập nhật lại state column sau khi đã kéo thả
+        // Gọi lên props function moveColumns nằm ở component cha cao nhất (boards/_id.jsx)
+        // nâng cao sẽ đưa dữ liệu Board ra ngoài Redux Global Store, lúc này có thể gọi API luôn ở đây là xong thay vì phải lần lượt gọi ngược lên những component cha phía bên trên (đói với component con nằm càng sâu thì càng khổ)
+        // với việc sủ dụng Redux như vậy thì code sẽ clean, chuẩn chỉnh hơn
+        moveColumns(dndOrderedColumns);
+
+        // vẫn gọi update state ở đây để tránh delay hoặc flickering giao diện lúc kéo thả cần phải chờ gọi API (small trick)
         setOrderedColumns(dndOrderedColumns);
       }
     }
