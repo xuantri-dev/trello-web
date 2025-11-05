@@ -1,6 +1,5 @@
 import Box from "@mui/material/Box";
 import ListColumns from "./ListColumns/ListColumns";
-import { mapOrder } from "~/utils/sorts";
 import {
   DndContext,
   // PointerSensor,
@@ -31,7 +30,13 @@ const ACTIVE_DRAG_ITEM_TYPE = {
   CARD: "ACTIVE_DRAG_ITEM_TYPE_CARD",
 };
 
-function BoardContent({ board, createNewColumn, createNewCard, moveColumns }) {
+function BoardContent({
+  board,
+  createNewColumn,
+  createNewCard,
+  moveColumns,
+  moveCardInTheSameColumn,
+}) {
   // nếu dùng pointerSensor mặc định thì phải kết hợp thuộc tính CSS touch-action: none ở nhưng phần tử kéo thả - nhưng mà còn bug
   // const pointerSensor = useSensor(PointerSensor, {
   //   activationConstraint: { distance: 10 },
@@ -65,7 +70,8 @@ function BoardContent({ board, createNewColumn, createNewCard, moveColumns }) {
   const lastOverId = useRef(null);
 
   useEffect(() => {
-    setOrderedColumns(mapOrder(board?.columns, board?.columnOrderIds, "_id"));
+    // Columns đã được sắp xếp ở components cha cao nhất (boards/_id.jsx) (Vid 71 đã giải thích lí do)
+    setOrderedColumns(board.columns);
   }, [board]);
 
   // tìm một cái column theo cardId
@@ -282,6 +288,9 @@ function BoardContent({ board, createNewColumn, createNewCard, moveColumns }) {
           oldCardIndex,
           newCardIndex
         );
+        const dndOrderedCardIds = dndOrderedCards.map((card) => card._id);
+
+        // vẫn gọi update state ở đây để tránh delay hoặc flickering giao diện lúc kéo thả cần phải chờ gọi API (small trick)
         setOrderedColumns((prevColumns) => {
           // clone mảng OrderColumnsState cũ ra một cái mới để xử lí data rồi return - cập nhật lại OrderColumnsState
           const nextColumns = cloneDeep(prevColumns);
@@ -293,12 +302,22 @@ function BoardContent({ board, createNewColumn, createNewCard, moveColumns }) {
 
           // cập nhật lại 2 giá trị mới là card và cardOrderIds trong cái targetColumn
           targetColumn.cards = dndOrderedCards;
-          targetColumn.cardOrderIds = dndOrderedCards.map((card) => card._id);
-          console.log("targetColumn: ", targetColumn);
+          targetColumn.cardOrderIds = dndOrderedCardIds;
 
           // trả về giá trị state mới (chuẩn vị trí)
           return nextColumns;
         });
+
+        /**
+         * Gọi lên props function moveCardInTheSameColumn nằm ở component cha cao nhất (boards/_id.jsx)
+         * nâng cao sẽ đưa dữ liệu Board ra ngoài Redux Global Store, lúc này có thể gọi API luôn ở đây là xong thay vì phải lần lượt gọi ngược lên những component cha phía bên trên (đói với component con nằm càng sâu thì càng khổ)
+         * với việc sủ dụng Redux như vậy thì code sẽ clean, chuẩn chỉnh hơn
+         */
+        moveCardInTheSameColumn(
+          dndOrderedCards,
+          dndOrderedCardIds,
+          oldColumnWhenDraggingCard._id
+        );
       }
     }
 
@@ -322,13 +341,15 @@ function BoardContent({ board, createNewColumn, createNewCard, moveColumns }) {
           newColumnIndex
         );
 
-        // Gọi lên props function moveColumns nằm ở component cha cao nhất (boards/_id.jsx)
-        // nâng cao sẽ đưa dữ liệu Board ra ngoài Redux Global Store, lúc này có thể gọi API luôn ở đây là xong thay vì phải lần lượt gọi ngược lên những component cha phía bên trên (đói với component con nằm càng sâu thì càng khổ)
-        // với việc sủ dụng Redux như vậy thì code sẽ clean, chuẩn chỉnh hơn
-        moveColumns(dndOrderedColumns);
-
         // vẫn gọi update state ở đây để tránh delay hoặc flickering giao diện lúc kéo thả cần phải chờ gọi API (small trick)
         setOrderedColumns(dndOrderedColumns);
+
+        /**
+         * Gọi lên props function moveColumns nằm ở component cha cao nhất (boards/_id.jsx)
+         * nâng cao sẽ đưa dữ liệu Board ra ngoài Redux Global Store, lúc này có thể gọi API luôn ở đây là xong thay vì phải lần lượt gọi ngược lên những component cha phía bên trên (đói với component con nằm càng sâu thì càng khổ)
+         * với việc sủ dụng Redux như vậy thì code sẽ clean, chuẩn chỉnh hơn
+         */
+        moveColumns(dndOrderedColumns);
       }
     }
 
