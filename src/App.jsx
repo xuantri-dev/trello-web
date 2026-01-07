@@ -6,6 +6,7 @@ import Auth from '~/pages/Auth/Auth'
 import AccountVerification from '~/pages/Auth/AccountVerification'
 import { useSelector } from 'react-redux'
 import { selectCurrentUser } from '~/redux/user/userSlice'
+import Settings from './pages/Settings/Settings'
 
 /**
  * Giải pháp Clean Code trong việc xác định các route nào cần đăng nhập tài khoản xong thì mới cho truy cập
@@ -13,6 +14,7 @@ import { selectCurrentUser } from '~/redux/user/userSlice'
  * https://reactrouter.com/en/main/components/outlet
  * https://www.robinwieruch.de/react-router-private-routes/
  */
+
 const ProtectedRoute = ({ user }) => {
   // console.log(user)
   if (!user) return <Navigate to='/login' replace={true} />
@@ -37,6 +39,10 @@ function App() {
 
         {/* Board Details */}
         <Route path='/boards/:boardId' element={<Board />} />
+
+        {/* User Settings */}
+        <Route path='/settings/account' element={<Settings />} />
+        <Route path='/settings/security' element={<Settings />} />
       </Route>
 
       {/* Authentication */}
